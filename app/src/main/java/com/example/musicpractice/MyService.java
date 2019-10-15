@@ -1,5 +1,8 @@
 package com.example.musicpractice;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentResolver;
@@ -14,6 +17,7 @@ import android.os.IBinder;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 
 import java.io.IOException;
 
@@ -22,12 +26,21 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
     public static final String ACTION_PLAY = "com.example.musicpractice.PLAY";
     public static final String ACTION_PAUSE = "com.example.musicpractice.PAUSE";
 
+    // Channel for notifications.
+    private static final String CHANNEL_NAME = "com.example.musicpractice.CHANNEL";
+
     private MediaPlayer mMediaPlayer;
     private boolean mPrepared = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(CHANNEL_NAME,
+                    "MyService", NotificationManager.IMPORTANCE_LOW);
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            manager.createNotificationChannel(channel);
+        }
     }
 
     private Uri resourceToUri(int resId) {
@@ -99,6 +112,17 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
     @Override
     public void onPrepared(MediaPlayer mp) {
         mPrepared = true;
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                notificationIntent, 0);
+
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_NAME)
+                .setContentTitle("Playing music")
+                .setContentText("Dead Combo")
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(android.R.drawable.star_on)
+                .build();
+        startForeground(1, notification);
         mp.start();
     }
 }
