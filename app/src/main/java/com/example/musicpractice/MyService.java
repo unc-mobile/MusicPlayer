@@ -50,9 +50,44 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
     }
 
     private void pause() {
+        if (mMediaPlayer != null) {
+            if (mMediaPlayer.isPlaying()) {
+                mMediaPlayer.pause();
+            } else if (mPrepared) {
+                mMediaPlayer.start();
+            }
+        }
     }
 
     private void play() {
+        if (mMediaPlayer == null) {
+            mMediaPlayer = new MediaPlayer();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                AudioAttributes attributes = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+                mMediaPlayer.setAudioAttributes(attributes);
+            } else {
+                mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            }
+
+            try {
+                mMediaPlayer.setDataSource(this, resourceToUri(R.raw.dead_combo));
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "EXCEPTION!", Toast.LENGTH_SHORT).show();
+            }
+
+            mMediaPlayer.setOnPreparedListener(this);
+            mMediaPlayer.prepareAsync();
+            Toast.makeText(this, "Preparing...", Toast.LENGTH_SHORT).show();
+        } else if (mMediaPlayer.isPlaying()) {
+            Toast.makeText(this, "Already playing!", Toast.LENGTH_SHORT).show();
+        } else if (mPrepared) {
+            // The media player is already prepared; we just need to start it again.
+            onPrepared(mMediaPlayer);
+        }
     }
 
     @Nullable
@@ -64,5 +99,6 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
     @Override
     public void onPrepared(MediaPlayer mp) {
         mPrepared = true;
+        mp.start();
     }
 }
