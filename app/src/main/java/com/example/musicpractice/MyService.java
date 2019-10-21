@@ -25,6 +25,7 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
     // Actions associated with Intents that start this Service
     public static final String ACTION_PLAY = "com.example.musicpractice.PLAY";
     public static final String ACTION_PAUSE = "com.example.musicpractice.PAUSE";
+    public static final String ACTION_STOP = "com.example.musicpractice.STOP";
 
     // Channel for notifications.
     private static final String CHANNEL_NAME = "com.example.musicpractice.CHANNEL";
@@ -57,7 +58,14 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
             play();
         } else if (intent.getAction() == ACTION_PAUSE) {
             pause();
+        } else if (intent.getAction() == ACTION_STOP) {
+            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+                mMediaPlayer.stop();
+                mPrepared = false;
+                stopForeground(true);
+            }
         }
+
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -94,12 +102,20 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
 
             mMediaPlayer.setOnPreparedListener(this);
             mMediaPlayer.prepareAsync();
+            mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    stopForeground(true);
+                }
+            });
             Toast.makeText(this, "Preparing...", Toast.LENGTH_SHORT).show();
         } else if (mMediaPlayer.isPlaying()) {
             Toast.makeText(this, "Already playing!", Toast.LENGTH_SHORT).show();
         } else if (mPrepared) {
             // The media player is already prepared; we just need to start it again.
             onPrepared(mMediaPlayer);
+        } else {
+            mMediaPlayer.prepareAsync();
         }
     }
 
@@ -116,12 +132,37 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
                 notificationIntent, 0);
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_NAME)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_NAME)
                 .setContentTitle("Playing music")
                 .setContentText("Dead Combo")
                 .setContentIntent(pendingIntent)
-                .setSmallIcon(android.R.drawable.star_on)
-                .build();
+                .setSmallIcon(android.R.drawable.star_on);
+
+        Intent playIntent = new Intent(getApplicationContext(), MyService.class);
+        playIntent.setAction(ACTION_PLAY);
+        PendingIntent playPending = PendingIntent.getService(this, 0,
+                playIntent, 0);
+        NotificationCompat.Action playAction = new NotificationCompat.Action(
+                android.R.drawable.ic_media_play,"PLAY", playPending);
+        builder.addAction(playAction);
+
+        Intent pauseIntent = new Intent(getApplicationContext(), MyService.class);
+        pauseIntent.setAction(ACTION_PAUSE);
+        PendingIntent pausePending = PendingIntent.getService(getApplicationContext(), 0,
+                pauseIntent, 0);
+        NotificationCompat.Action pauseAction = new NotificationCompat.Action(
+                android.R.drawable.ic_media_pause, "PAUSE", pausePending);
+        builder.addAction(pauseAction);
+
+        Intent stopIntent = new Intent(this, MyService.class);
+        stopIntent.setAction(ACTION_STOP);
+        PendingIntent stopPending = PendingIntent.getService(this, 0,
+                stopIntent, 0);
+        NotificationCompat.Action stopAction = new NotificationCompat.Action(
+                android.R.drawable.ic_delete,"STOP", stopPending);
+        builder.addAction(stopAction);
+
+        Notification notification = builder.build();
         startForeground(1, notification);
         mp.start();
     }
