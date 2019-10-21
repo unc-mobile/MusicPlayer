@@ -136,7 +136,8 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
                 .setContentTitle("Playing music")
                 .setContentText("Dead Combo")
                 .setContentIntent(pendingIntent)
-                .setSmallIcon(android.R.drawable.star_on);
+                .setSmallIcon(android.R.drawable.star_on)
+                .setPriority(NotificationCompat.PRIORITY_LOW);
 
         Intent playIntent = new Intent(getApplicationContext(), MyService.class);
         playIntent.setAction(ACTION_PLAY);
