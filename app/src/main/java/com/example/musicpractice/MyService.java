@@ -59,7 +59,7 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
         } else if (intent.getAction() == ACTION_PAUSE) {
             pause();
         } else if (intent.getAction() == ACTION_STOP) {
-            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+            if (mMediaPlayer != null) {
                 mMediaPlayer.stop();
                 mPrepared = false;
                 stopForeground(true);
